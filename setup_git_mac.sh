@@ -17,8 +17,8 @@ log() { printf "\033[1;34m▶\033[0m %s\n" "$*"; }
 ###############################################################################
 # 1. Git identity & sane defaults                                              #
 ###############################################################################
-GIT_NAME="${GIT_NAME:-felipesantos94}"
-GIT_EMAIL="${GIT_EMAIL:-felipe.fars94@gmail.com}"
+GIT_NAME="${GIT_NAME:-<my_name>}"
+GIT_EMAIL="${GIT_EMAIL:-<my_email>}"
 
 log "Configuring git author → \"$GIT_NAME <$GIT_EMAIL>\""
 git config --global user.name "$GIT_NAME"
