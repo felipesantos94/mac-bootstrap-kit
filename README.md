@@ -7,7 +7,11 @@
 | `setup_env_mac.sh` | End‑to‑end dev‑environment (Homebrew, asdf, Node, CLI apps, Zim + P10k, VS Code + font)             | \~15 min (Xcode & Brew)         | < 30 s (mostly `brew update`) |
 | `setup_ssh_git.sh` | Configure global Git identity, create & upload SSH key, set Git defaults, write global `.gitignore` | \~25 s (1st key + browser auth) | < 2 s (no‑ops)                |
 
-> ⚠️ **Scope** – these scripts suit **my** laptop only. They hard‑code personal paths, schedules, and bleeding‑edge behaviour.
+> These scripts suit **my** personal use-case. If you want to use it, download it and change whatever suits you best, or fork it.
+>
+> ⚠️ Replace these with the actual **GitHub username** and **email address** in **setup_git_mac.sh:**
+- GIT_NAME="${GIT_NAME:-<my_name>}"
+- GIT_EMAIL="${GIT_EMAIL:-<my_email>}"
 
 ---
 
@@ -36,7 +40,7 @@ cd mac-bootstrap-kit
 # run the environment bootstrap – asks for sudo once for softwareupdate
 bash setup_env_mac.sh
 
-# open a **new** terminal tab to start the P10k wizard
+# open a new terminal tab to start the P10k wizard
 ```
 
 ### Prerequisites
