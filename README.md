@@ -1,127 +1,116 @@
-# 🍏 Mac Bootstrap Kit
+# Mac Bootstrap Kit
 
-> **Bleeding‑edge setup for Apple‑silicon Macs** -- no versions are pinned; every run fetches the latest Homebrew bottles, Node LTS, Zim modules and npm globals.
+**Personal one‑shot installers for my Apple‑silicon Mac.**  Nothing here is version‑pinned on purpose – every run grabs the freshest tools available.
 
-Two scripts ship your machine from zero to _code‑ready_ in minutes:
+| Script             | Purpose                                                                                             | 1st‑run ⌚                       | Re‑run ⌚                      |
+| ------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------- | ----------------------------- |
+| `setup_env_mac.sh` | End‑to‑end dev‑environment (Homebrew, asdf, Node, CLI apps, Zim + P10k, VS Code + font)             | \~15 min (Xcode & Brew)         | < 30 s (mostly `brew update`) |
+| `setup_ssh_git.sh` | Configure global Git identity, create & upload SSH key, set Git defaults, write global `.gitignore` | \~25 s (1st key + browser auth) | < 2 s (no‑ops)                |
 
-| File                   | Purpose                                                                                                                                                                                               | Typical first‑run time            |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| **`setup_env_mac.sh`** | Installs Xcode CLI, Homebrew, fonts, GUI apps (VS Code, Chrome, Orbstack), latest Node via **asdf**, global JS/TS tooling, Zim framework+Powerlevel10k, and a weekly self‑updater (`launchd`).        |  ≈ 15 min (Xcode & brew bottling) |
-| **`setup_ssh_git.sh`** | Configures your Git author, sensible Git defaults, generates a secure *ed25519* key, loads it into Keychain, authenticates with GitHub via **gh**, uploads the key, and writes a global `.gitignore`. |  < 30 s                           |
+> ⚠️ **Scope** – these scripts suit **my** laptop only. They hard‑code personal paths, schedules, and bleeding‑edge behaviour.
 
 ---
 
-## 📂 Repo layout
+## Folder layout
 
 ```
 mac-bootstrap-kit/
-├─ setup_env_mac.sh      # Dev‑environment bootstrapper
-├─ setup_ssh_git.sh      # Git & GitHub SSH helper
-├─ vendor/               # SHA‑pinned installer stubs (no curl|bash at runtime)
-│   ├─ asdf/install.sh
-│   ├─ homebrew/install.sh
-│   └─ zim/...
-└─ README.md             # (this file)
-
+├── setup_env_mac.sh   # dev‑environment bootstrapper
+├── setup_ssh_git.sh   # Git + GitHub SSH helper
+├── vendor/            # SHA‑pinned installer stubs (no curl|bash)
+│   ├── asdf/install.sh
+│   ├── homebrew/install.sh
+│   └── zim/ …
+└── README.md          # (this file)
 ```
 
 ---
 
-## 🚀 Quick‑start
+## Quick start
 
-```
-# 1 clone & cd
-git clone https://github.com/<you>/mac-bootstrap-kit.git
+```bash
+# clone wherever you keep dotfiles/backups
+git clone git@github.com:felipesantos94/mac-bootstrap-kit.git
 cd mac-bootstrap-kit
 
-# 2 bootstrap the environment (one sudo prompt for softwareupdate)
+# run the environment bootstrap – asks for sudo once for softwareupdate
 bash setup_env_mac.sh
 
-# 3 open a new terminal tab -- Powerlevel10k runs its wizard
-
-# 4 configure Git + GitHub SSH (no prompts if GIT_NAME / GIT_EMAIL set)
-bash setup_ssh_git.sh
-
+# open a **new** terminal tab to start the P10k wizard
 ```
 
-### Customising Git identity upfront
+### Prerequisites
 
-```
-GIT_NAME="Ada Lovelace"\
-GIT_EMAIL="ada@lovelace.dev"\
-bash setup_ssh_git.sh
-
-```
+- Apple‑silicon Mac (arm64) running macOS Sequoia or newer.
+- Internet connection fast enough for \~1 GB Xcode CLI download.
+- Browser for the one‑time **gh auth login** step.
 
 ---
 
-## 🛠 What gets installed?
+## What happens – step by step
 
-- **Xcode Command‑Line Tools** *(headless)* + Rosetta (if missing)
+### `setup_env_mac.sh`
 
-- **Homebrew** core formulae: `git`, `jq`, `gh`, `fzf`, `ripgrep`, `direnv`, `bat`, ...
+1. **Validate vendor stubs** (`vendor/…/install.sh`).\
+   No remote *curl | bash* – inspected once, reused forever.
+2. **Snapshot** existing Zsh & dotfiles into `~/.zsh_backup_YYYYMMDD_HHMMSS/`.
+3. **Headless Xcode + Rosetta** via `softwareupdate`. Skips if already present.
+4. **Homebrew** (install or update).
+5. Remove any Homebrew `node` / `nvm` formulae to avoid path clashes.
+6. Install core CLI apps: `git`, `jq`, `gh`, `fzf`, `ripgrep`, `direnv`, etc.\
+   Casks: **Orbstack**, **Visual Studio Code**, **Google Chrome**, **MesloLGS NF**.
+7. **VS Code settings** patched → Meslo font + default zsh profile.
+8. **asdf** → latest Node LTS.\
+   Enables `corepack`, installs global `pnpm`, `tsx`, `typescript`, `ts-node`.
+9. **Zim** with plugins (fzf‑tab, autosuggestions, fast‑syntax‑highlighting, P10k). Compiled for fast shell startup.
+10. Modular alias files (`git.zsh`, `npm.zsh`, `pnpm.zsh`, `gh.zsh`).
+11. **update-devtools** script + `launchd` agent (`com.local.devtools-updater`) – runs Mondays 04:00.
+12. Glue RC injected into `~/.zshrc` (loads asdf, Zim, aliases, P10k).
+13. Plain‑text **install report** saved next to the backup.
 
-- **GUI casks**: VS Code, Google Chrome, Orbstack, MesloLGS NF font
+### `setup_ssh_git.sh`
 
-- **asdf** runtime manager → latest **Node LTS**
-
-- Global npm tools: `pnpm`, `tsx`, `typescript`, `ts-node`
-
-- **Zim framework** with fzf‑tab, autosuggestions, fast‑syntax‑highlighting, Powerlevel10k
-
-- **LaunchAgent** -- weekly `update-devtools` Monday 04:00
-
-- **Post‑install report** at `~/.zsh_backup_<timestamp>/install_report_*.txt`
-
-Git/SSH script adds:
-
-- Git defaults: `push.autoSetupRemote=true`, `pull.rebase=true`, `init.defaultBranch=main`
-
-- Single **ed25519** key autoloaded into Keychain & GitHub
-
-- Global `.gitignore` for editor & OS cruft
+1. Configure `user.name` / `user.email` and sensible Git defaults:
+   - `init.defaultBranch main`
+   - `push.autoSetupRemote true`
+   - `pull.rebase true`
+   - `rebase.autoStash true`
+2. Create `~/.ssh/` (700) + *ed25519* key (if absent).
+3. Ensure **one** `ssh-agent` instance; load key into macOS Keychain.
+4. `gh auth login` (browser) only if token missing/expired.
+5. Upload key via `gh ssh-key add` – JSON detection avoids truncated grep.
+6. Write `~/.gitignore_global` (IDEs, OS cruft, logs, caches).
 
 ---
 
-## 🔄 Updating
+## Performance notes
 
-The launch agent keeps Homebrew, Zim, asdf plugins & npm globals fresh.\
-Trigger manually any time:
+| Phase                    | Cold run     | Subsequent runs       |
+| ------------------------ | ------------ | --------------------- |
+| Xcode CLI download       | \~7‑10 min   | 0 s (cached)          |
+| Homebrew install         | \~3 min      | \~8 s (`brew update`) |
+| Zim compile              | \~15 s       | 0 s                   |
+| Total `setup_env_mac.sh` | **≈ 15 min** | **< 30 s**            |
+| Total `setup_ssh_git.sh` | **≈ 25 s**   | **< 2 s**             |
 
+Shell startup (`zsh -l`) stays around **60–80 ms** thanks to compiled functions & minimal plugin set.
+
+---
+
+## Updating manually
+
+```bash
+update-devtools   # (function auto‑loaded in every shell)
 ```
-update-devtools
 
-```
-
----
-
-## ♻️ Rollback / Uninstall
-
-Every run snapshots your old dotfiles under `~/.zsh_backup_<timestamp>/`.\
-Restore by copying files back, or remove created artefacts:
-
-```
-rm -rf ~/.dotfiles ~/.zim ~/.asdf\
-       ~/Library/LaunchAgents/com.local.devtools-updater.plist
-
-```
-
-Remove Homebrew packages individually via `brew uninstall`.
+Runs: `brew upgrade`, `asdf plugin-update`, `zimfw upgrade`, `npm update -g`.
 
 ---
 
-## ☁️ Backups
+## Rollback / uninstall
 
-- **GitHub** -- commit this repo (including `vendor/`) to keep a versioned copy.
-
-- **Google Drive / iCloud** -- sync the entire folder for off‑site redundancy.
-
----
-
-## 📄 License
-
-MIT -- free to use, modify, and share. No warranties.
+- Restore dotfiles: `cp -a ~/.zsh_backup_<timestamp>/* ~` and restart Terminal.
+- Remove launch agent: `launchctl remove com.local.devtools-updater`.
+- Optionally `rm -rf ~/.dotfiles ~/.zim ~/.asdf`.
 
 ---
-
-### ✨ Happy hacking!
