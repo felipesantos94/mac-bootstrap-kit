@@ -2,7 +2,7 @@
 ###############################################################################
 # 💻  setup_env.sh – Apple-silicon bleeding-edge bootstrapper                  #
 #    • Headless Xcode + Rosetta install (idempotent)                           #
-#    • asdf runtime manager (Node + JS/TS tools)                               #
+#    • mise runtime manager (Node + JS/TS tools)                               #
 #    • Vendor installers (no live curl|bash)                                   #
 #    • Post-install version report                                             #
 ###############################################################################
@@ -21,12 +21,12 @@ bold_blue "▶ 1. Verifying vendor payloads…"
 SCRIPT_DIR="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 && pwd)"
 VENDOR_DIR="$SCRIPT_DIR/vendor"
 
-ASDF_INSTALL_SCRIPT="$VENDOR_DIR/asdf/install.sh"         # latest vendored
+MISE_INSTALL_SCRIPT="$VENDOR_DIR/mise/install.sh"         # latest vendored
 ZIM_INSTALL_SCRIPT="$VENDOR_DIR/zim/install.zsh"          # latest vendored
 HOMEBREW_INSTALL_SCRIPT="$VENDOR_DIR/homebrew/install.sh" # latest vendored
 ZIMFW_SCRIPT="$VENDOR_DIR/zim/zimfw.zsh"                  # latest vendored
 
-for f in "$ASDF_INSTALL_SCRIPT" "$ZIM_INSTALL_SCRIPT" "$HOMEBREW_INSTALL_SCRIPT" "$ZIMFW_SCRIPT"; do
+for f in "$MISE_INSTALL_SCRIPT" "$ZIM_INSTALL_SCRIPT" "$HOMEBREW_INSTALL_SCRIPT" "$ZIMFW_SCRIPT"; do
   [[ -f $f ]] || {
     echo "❌  Missing vendor file: $f"
     exit 1
@@ -74,7 +74,6 @@ bold_blue "▶ 4. Ensuring Xcode Command-Line Tools & Rosetta…"
 if ! pkgutil --pkgs | grep -q "com.apple.pkg.RosettaUpdateAuto"; then
   sudo softwareupdate --install-rosetta --agree-to-license >/dev/null 2>&1 || true
 fi
-
 if ! xcode-select -p &>/dev/null; then
   echo "🛠 Installing Xcode CLI Tools…"
   sudo softwareupdate --install --all --agree-to-license --force
@@ -131,21 +130,18 @@ jq '. + {
 echo "✅ VSCode terminal now uses MesloLGS NF + zsh."
 
 ###############################################################################
-# 8. Runtimes via asdf (latest Node)                                           #
+# 8. Runtimes via mise (latest Node)                                           #
 ###############################################################################
-bold_blue "▶ 8. Installing runtimes via asdf…"
-ASDF_DIR="$HOME/.asdf"
-[[ -x $ASDF_DIR/bin/asdf ]] || bash "$ASDF_INSTALL_SCRIPT" --no-bash --no-fish --no-zsh
-. "$ASDF_DIR/asdf.sh"
+bold_blue "▶ 8. Installing runtimes via mise…"
+MISE_DIR="$HOME/.local/share/mise"
+MISE_BIN="$MISE_DIR/bin/mise"
 
-if ! asdf plugin-list | grep -q "^nodejs$"; then
-  asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git && echo "➕ Added asdf-nodejs plugin"
-fi
-[[ -f $ASDF_DIR/keyrings/nodejs/asc ]] || bash "$ASDF_DIR/plugins/nodejs/bin/import-release-team-keyring"
+[[ -x $MISE_BIN ]] || bash "$MISE_INSTALL_SCRIPT" </dev/null
+eval "$("$MISE_BIN" activate bash)"
 
-asdf install nodejs latest
-asdf global nodejs latest
-echo "🟢 Node $(node -v) ready (npm $(npm -v))."
+# Install and set global NodeJS
+"$MISE_BIN" use -g node@latest --install
+echo "🟢 Node $("$MISE_BIN" exec -- node -v) ready (npm $("$MISE_BIN" exec -- npm -v))."
 
 corepack enable
 npm install -g pnpm tsx typescript ts-node
@@ -276,13 +272,13 @@ echo "✅ Aliases ready."
 bold_blue "▶ 11. Creating dev-tools updater…"
 cat >"$BIN_DIR/update-devtools" <<'EOF'
 #!/usr/bin/env zsh
-echo '🔄 Updating Homebrew, asdf plugins, Zim & global npm packages…'
+echo '🔄 Updating Homebrew, mise, Zim & global npm packages…'
 
 brew update && brew upgrade && brew autoremove -s && brew cleanup -s
 
-asdf update >/dev/null 2>&1 || true
-asdf plugin-update --all >/dev/null 2>&1 || true
-asdf install >/dev/null 2>&1 || true
+mise self-update >/dev/null 2>&1 || true
+mise use -g node@latest --install >/dev/null 2>&1 || true
+mise prune >/dev/null 2>&1 || true
 
 zimfw update -q && zimfw upgrade -q
 
@@ -315,7 +311,10 @@ ZIM_HOME=${ZDOTDIR:-${HOME}}/.zim
 source $ZIM_HOME/zimfw.zsh init
 source $ZIM_HOME/init.zsh
 
-[[ -s $HOME/.asdf/asdf.sh ]] && source $HOME/.asdf/asdf.sh
+# Initialize mise
+if command -v mise &>/dev/null; then
+  eval "$(mise activate zsh)"
+fi
 
 autoload -Uz compinit && compinit -C
 
@@ -325,9 +324,9 @@ for f in $HOME/.dotfiles/zsh/*.zsh; do source "$f"; done
 [[ -f ~/.p10k.zsh ]] && zcompile ~/.p10k.zsh &>/dev/null || true
 EOF
 
-append_if_missing "$HOME/.zshrc" "# >>> my setup_mac.sh custom configs (do not remove)"
+append_if_missing "$HOME/.zshrc" "# >>> mac-bootstrap-env (do not remove)"
 append_if_missing "$HOME/.zshrc" "source \"$SETUP_RC\""
-append_if_missing "$HOME/.zshrc" "# <<< my setup_mac.sh custom configs"
+append_if_missing "$HOME/.zshrc" "# <<< mac-bootstrap-env"
 echo "✅ RC glued into ~/.zshrc."
 
 ###############################################################################
@@ -374,7 +373,7 @@ bold_blue "▶ 14. Generating post-install report…"
   echo "• Brew formulae    :"
   brew list --formula --versions | sed 's/^/   └ /'
   echo "• Orbstack version : $(orbstack --version 2>/dev/null || echo n/a)"
-  echo "• Node (asdf)      : $(node -v) (npm $(npm -v), pnpm $(pnpm -v))"
+  echo "• Node (mise)      : $("$MISE_BIN" exec -- node -v) (npm $("$MISE_BIN" exec -- npm -v), pnpm $(pnpm -v))"
   echo "• Zim modules      : $(zimfw list | paste -sd, -)"
 } | tee "$REPORT_FILE"
 
