@@ -4,7 +4,7 @@
 
 | Script             | Purpose                                                                                             | 1st‑run ⌚                       | Re‑run ⌚                      |
 | ------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------- | ----------------------------- |
-| `setup_env_mac.sh` | End‑to‑end dev‑environment (Homebrew, asdf, Node, CLI apps, Zim + P10k, VS Code + font)             | \~15 min (Xcode & Brew)         | < 30 s (mostly `brew update`) |
+| `setup_env_mac.sh` | End‑to‑end dev‑environment (Homebrew, mise-en-place, Node, CLI apps, Zim + P10k, VS Code + font)             | \~15 min (Xcode & Brew)         | < 30 s (mostly `brew update`) |
 | `setup_ssh_git.sh` | Configure global Git identity, create & upload SSH key, set Git defaults, write global `.gitignore` | \~25 s (1st key + browser auth) | < 2 s (no‑ops)                |
 
 > These scripts suit **my** personal use-case. If you want to use it, download it and change whatever suits you best, or fork it.
@@ -22,7 +22,7 @@ mac-bootstrap-kit/
 ├── setup_env_mac.sh   # dev‑environment bootstrapper
 ├── setup_ssh_git.sh   # Git + GitHub SSH helper
 ├── vendor/            # SHA‑pinned installer stubs (no curl|bash)
-│   ├── asdf/install.sh
+│   ├── mise/install.sh
 │   ├── homebrew/install.sh
 │   └── zim/ …
 └── README.md          # (this file)
@@ -64,12 +64,12 @@ bash setup_env_mac.sh
 6. Install core CLI apps: `git`, `jq`, `gh`, `fzf`, `ripgrep`, `direnv`, etc.\
    Casks: **Orbstack**, **Visual Studio Code**, **Google Chrome**, **MesloLGS NF**.
 7. **VS Code settings** patched → Meslo font + default zsh profile.
-8. **asdf** → latest Node LTS.\
+8. **mise-en-place** → latest Node LTS.\
    Enables `corepack`, installs global `pnpm`, `tsx`, `typescript`, `ts-node`.
 9. **Zim** with plugins (fzf‑tab, autosuggestions, fast‑syntax‑highlighting, P10k). Compiled for fast shell startup.
 10. Modular alias files (`git.zsh`, `npm.zsh`, `pnpm.zsh`, `gh.zsh`).
 11. **update-devtools** script + `launchd` agent (`com.local.devtools-updater`) – runs Mondays 04:00.
-12. Glue RC injected into `~/.zshrc` (loads asdf, Zim, aliases, P10k).
+12. Glue RC injected into `~/.zshrc` (loads mise, Zim, aliases, P10k).
 13. Plain‑text **install report** saved next to the backup.
 
 ### `setup_ssh_git.sh`
@@ -107,7 +107,7 @@ Shell startup (`zsh -l`) stays around **60–80 ms** thanks to compiled functi
 update-devtools   # (function auto‑loaded in every shell)
 ```
 
-Runs: `brew upgrade`, `asdf plugin-update`, `zimfw upgrade`, `npm update -g`.
+Runs: `brew upgrade`, `mise plugin-update`, `zimfw upgrade`, `npm update -g`.
 
 ---
 
@@ -115,6 +115,6 @@ Runs: `brew upgrade`, `asdf plugin-update`, `zimfw upgrade`, `npm update -g`.
 
 - Restore dotfiles: `cp -a ~/.zsh_backup_<timestamp>/* ~` and restart Terminal.
 - Remove launch agent: `launchctl remove com.local.devtools-updater`.
-- Optionally `rm -rf ~/.dotfiles ~/.zim ~/.asdf`.
+- Optionally `rm -rf ~/.dotfiles ~/.zim ~/.mise`.
 
 ---
